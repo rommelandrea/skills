@@ -10,6 +10,7 @@ Skills for AI-assisted development.
 | `fastify` | Comprehensive best practices for Fastify development |
 | `kysely` | Type-safe SQL query builder best practices for PostgreSQL |
 | `node` | Best practices for Node.js development |
+| `octocat` | Git and GitHub wizard skill for `gh` CLI workflows, pull requests, and merge conflict resolution |
 | `typescript-magician` | TypeScript wizard specializing in advanced type systems, complex generics, and eliminating any types |
 
 ## Usage
