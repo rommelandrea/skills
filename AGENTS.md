@@ -19,6 +19,7 @@ Current top-level skills include:
 
 - `biome-linting` — Linting and formatting workflows with Biome (install, config, migration from ESLint/Prettier, CI/editor integration)
 - `fastify` — Comprehensive Fastify best practices (plugins, routes, schemas, hooks, auth, testing, deployment, and more)
+- `kysely` — Type-safe SQL query builder best practices (setup, type safety, queries, transactions, migrations, raw SQL, relations, error handling, performance, testing, plugins)
 
 ### 2) Minimal TypeScript package surface (`src/`)
 
@@ -46,6 +47,12 @@ skills/
     rules/
       plugins.md, routes.md, schemas.md,  # 19 rule files covering
       hooks.md, testing.md, ...           # all Fastify patterns
+  kysely/
+    SKILL.md                              # Skill entrypoint
+    rules/
+      setup.md, type-safety.md,           # 12 rule files covering
+      select-queries.md, transactions.md, # queries, types, migrations,
+      migrations.md, raw-sql.md, ...      # performance, and more
 src/
   index.ts                                # Package version export only
 ```
