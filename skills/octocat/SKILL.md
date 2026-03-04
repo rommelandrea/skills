@@ -48,7 +48,9 @@ GitHub operations via gh CLI:
 - Create/manage PRs with proper templates
 - Open PRs with explicit base/head and structured content, e.g. `gh pr create --base main --head <branch> --title "<title>" --body-file <file>`
 - Prefer `--body-file` (or stdin with `--body-file -`) for multi-line PR bodies to avoid broken escaping
-- For issue creation, apply the same body formatting rule as PRs: prefer `--body-file` for multi-line content and avoid raw `\n` in inline `--body`
+- Create/manage issues with proper templates
+- Open issues with explicit title/body and structured content, e.g. `gh issue create --title "<title>" --body-file <file>`
+- Prefer `--body-file` (or stdin with `--body-file -`) for multi-line issue bodies to avoid broken escaping
 - If inline body text is required, use shell-safe newlines (e.g. Bash ANSI-C quoting `$'line1\n\nline2'`) instead of raw `\n`
 - After opening a PR, wait for CI with `gh pr checks <num> --watch 2>&1` and proactively fix failures
 - Validate unfamiliar gh commands first with `gh help <command>` before using them in guidance
