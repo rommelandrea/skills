@@ -20,6 +20,8 @@ Current top-level skills include:
 - `biome-linting` — Linting and formatting workflows with Biome (install, config, migration from ESLint/Prettier, CI/editor integration)
 - `fastify` — Comprehensive Fastify best practices (plugins, routes, schemas, hooks, auth, testing, deployment, and more)
 - `kysely` — Type-safe SQL query builder best practices (setup, type safety, queries, transactions, migrations, raw SQL, relations, error handling, performance, testing, plugins)
+- `node` — Node.js best practices with TypeScript type stripping (error handling, async patterns, streams, modules, testing, performance, caching, profiling, logging, environment, graceful shutdown)
+- `typescript-magician` — Advanced TypeScript type system mastery (generics, conditional types, mapped types, template literals, brand types, type narrowing, function overloads, error diagnosis)
 
 ### 2) Minimal TypeScript package surface (`src/`)
 
@@ -53,6 +55,18 @@ skills/
       setup.md, type-safety.md,           # 12 rule files covering
       select-queries.md, transactions.md, # queries, types, migrations,
       migrations.md, raw-sql.md, ...      # performance, and more
+  node/
+    SKILL.md                              # Skill entrypoint
+    rules/
+      error-handling.md, async-patterns.md, # 14 rule files covering
+      streams.md, modules.md, testing.md,   # Node.js patterns, testing,
+      performance.md, typescript.md, ...    # performance, and more
+  typescript-magician/
+    SKILL.md                              # Skill entrypoint
+    rules/
+      generics-basics.md, conditional-types.md, # 14 rule files covering
+      mapped-types.md, template-literal-types.md, # advanced TypeScript
+      opaque-types.md, type-narrowing.md, ...    # type system patterns
 src/
   index.ts                                # Package version export only
 ```

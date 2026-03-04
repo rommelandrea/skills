@@ -1,0 +1,17 @@
+{
+	"name": "@rommelandrea/skills",
+	"private": true,
+	"version": "1.0.0",
+	"description": "Best practices and skills for Node.js development",
+	"repository": {
+		"url": "https://github.com/rommelandrea/skills"
+	},
+	"scripts": {
+		"typecheck": "tsc --noEmit",
+		"test": "node --test"
+	},
+	"devDependencies": {
+		"@types/node": "^24.0.0",
+		"typescript": "^5.9.0"
+	}
+}
