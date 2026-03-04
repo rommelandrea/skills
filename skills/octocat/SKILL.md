@@ -1,4 +1,4 @@
-U---
+---
 name: octocat
 description: Git and GitHub wizard using gh CLI for all git operations and GitHub interactions
 metadata:
