@@ -23,16 +23,20 @@ interface Database {
 
 ## Generated Columns
 
-Use `Generated<T>` for columns the database populates (auto-increment IDs, defaults):
+Use `Generated<T>` for columns with defaults (optional on INSERT, present on SELECT). Use `GeneratedAlways<T>` for columns the database always generates (identity columns, computed columns — cannot be inserted or updated):
 
 ```typescript
+import type { Generated, GeneratedAlways, ColumnType } from 'kysely'
+
 interface UserTable {
-  // Generated: not required on INSERT, present on SELECT
+  // Generated: optional on INSERT, present on SELECT and UPDATE
   id: Generated<number>
   email: string
   name: string
-  // Generated: defaults to current timestamp
+  // Generated: defaults to current timestamp, optional on INSERT
   created_at: Generated<Date>
+  // GeneratedAlways: NEVER provided on INSERT or UPDATE
+  row_version: GeneratedAlways<number>
 }
 
 // INSERT — id and created_at are optional
@@ -172,3 +176,4 @@ interface UserTable {
 - **Do not define tables directly in the Database interface** — use named interfaces for each table to keep things readable and reusable with `Selectable<T>` / `Insertable<T>`.
 - **Keep generated types in sync** — run `kysely-codegen` in CI or as a pre-commit hook after migrations.
 - **`Generated<T>` only affects insert types** — the column is always present on select and update.
+- **`GeneratedAlways<T>` forbids insert AND update** — use it for identity columns and database-computed columns, not for columns with simple defaults.

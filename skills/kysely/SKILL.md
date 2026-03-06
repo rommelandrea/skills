@@ -3,9 +3,10 @@ name: kysely
 description: >
   Best practices for Kysely, the type-safe TypeScript SQL query builder.
   Use when writing queries, defining database types, creating migrations,
-  or integrating Kysely with PostgreSQL.
+  or integrating Kysely with PostgreSQL, MySQL, or SQLite.
 metadata:
-  tags: kysely, typescript, sql, postgres, query-builder, database, type-safe
+  version: "1.2.0"
+  tags: kysely, typescript, sql, postgres, mysql, sqlite, query-builder, database, type-safe
 ---
 
 ## When to use
@@ -43,3 +44,4 @@ Read individual rule files for detailed explanations and code examples:
 - **Parameterized queries**: Always use the `sql` template tag — never concatenate user input
 - **Single instance**: Create one `Kysely` instance per database, reuse it everywhere
 - **Thin abstraction**: Kysely compiles to SQL 1:1 — learn the SQL it generates
+- **Expression builder first**: Prefer `eb` callbacks over raw SQL for type-safe dynamic expressions

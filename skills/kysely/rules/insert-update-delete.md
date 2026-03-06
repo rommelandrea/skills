@@ -63,11 +63,11 @@ await db.updateTable('post')
   .where('id', '=', postId)
   .execute()
 
-// Conditional set with expression builder
+// Expression builder with ref and fn
 await db.updateTable('user')
-  .set((eb) => ({
-    login_count: eb('login_count', '+', 1),
-    last_login_at: new Date().toISOString(),
+  .set(({ ref, fn }) => ({
+    login_count: ref('login_count').add(1),
+    last_login_at: fn.now(),
   }))
   .where('id', '=', userId)
   .execute()
@@ -139,6 +139,67 @@ await db.insertInto('product')
   .execute()
 ```
 
+## Insert with Complex Values
+
+Use the expression builder for computed values, references, and subqueries:
+
+```typescript
+import { sql } from 'kysely'
+
+const user = await db.insertInto('user')
+  .values(({ ref, selectFrom, fn }) => ({
+    email: 'alice@example.com',
+    name: 'Alice',
+    display_name: sql<string>`concat('Ms. ', 'Alice')`,
+    department_id: selectFrom('department')
+      .select('id')
+      .where('name', '=', 'Engineering'),
+  }))
+  .returningAll()
+  .executeTakeFirstOrThrow()
+```
+
+## INSERT INTO ... SELECT
+
+Insert rows from a query result:
+
+```typescript
+await db.insertInto('archive_post')
+  .columns(['title', 'body', 'archived_at'])
+  .expression((eb) =>
+    eb.selectFrom('post')
+      .select([
+        'post.title',
+        'post.body',
+        eb.val(new Date().toISOString()).as('archived_at'),
+      ])
+      .where('post.published', '=', false)
+  )
+  .execute()
+```
+
+## MERGE (PostgreSQL 15+, MSSQL)
+
+Use `mergeInto` for conditional insert/update/delete based on row existence:
+
+```typescript
+const result = await db
+  .mergeInto('product as target')
+  .using('product_import as source', 'source.sku', 'target.sku')
+  .whenMatchedAnd('source.price', '>', 0)
+  .thenUpdateSet((eb) => ({
+    price: eb.ref('source.price'),
+    stock: eb.ref('source.stock'),
+  }))
+  .whenNotMatched()
+  .thenInsertValues((eb) => ({
+    sku: eb.ref('source.sku'),
+    price: eb.ref('source.price'),
+    stock: eb.ref('source.stock'),
+  }))
+  .executeTakeFirstOrThrow()
+```
+
 ## Using Insertable/Updateable Types
 
 Type function parameters with the derived helper types:
@@ -171,3 +232,4 @@ async function updatePost(id: number, data: PostUpdate) {
 - **`numDeletedRows` / `numUpdatedRows` are `bigint`** — compare with `BigInt(0)` or convert with `Number()`.
 - **Batch inserts share the same column set** — every object in the array must have the same keys.
 - **`onConflict` requires a unique constraint or index** on the target columns.
+- **`mergeInto` is not supported on SQLite or older PostgreSQL (<15)** — use `onConflict` for upserts on those platforms.

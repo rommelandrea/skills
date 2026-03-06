@@ -127,6 +127,22 @@ const users = await db.selectFrom('user')
   .execute()
 ```
 
+## Inspect Generated SQL with compile()
+
+Use `compile()` to see the exact SQL and parameters without executing:
+
+```typescript
+const query = db.selectFrom('user')
+  .select(['id', 'email'])
+  .where('active', '=', true)
+
+const { sql, parameters } = query.compile()
+console.log(sql)        // select "id", "email" from "user" where "active" = $1
+console.log(parameters) // [true]
+```
+
+This is invaluable for debugging slow queries and verifying index usage.
+
 ## Use EXPLAIN ANALYZE
 
 Inspect query plans to catch slow queries. Use raw SQL to run EXPLAIN:

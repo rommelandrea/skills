@@ -14,7 +14,18 @@ npm install kysely pg
 npm install --save-dev @types/pg
 ```
 
-For other dialects, replace `pg` with the appropriate driver (`mysql2`, `better-sqlite3`).
+For MySQL:
+
+```bash
+npm install kysely mysql2
+```
+
+For SQLite:
+
+```bash
+npm install kysely better-sqlite3
+npm install --save-dev @types/better-sqlite3
+```
 
 ## Define the Database Interface
 
@@ -72,6 +83,34 @@ const db = new Kysely<Database>({
 export { db }
 ```
 
+## Other Dialects
+
+```typescript
+// MySQL
+import { Kysely, MysqlDialect } from 'kysely'
+import { createPool } from 'mysql2'
+
+const db = new Kysely<Database>({
+  dialect: new MysqlDialect({
+    pool: createPool({
+      uri: process.env.DATABASE_URL,
+    }),
+  }),
+})
+
+// SQLite
+import { Kysely, SqliteDialect } from 'kysely'
+import Database from 'better-sqlite3'
+
+const db = new Kysely<Database>({
+  dialect: new SqliteDialect({
+    database: new Database('app.db'),
+  }),
+})
+```
+
+Third-party dialects are available for PlanetScale, Cloudflare D1, Neon, and others — install the dialect package and pass it to `new Kysely()`.
+
 ## Graceful Shutdown
 
 Always destroy the Kysely instance on process exit to close the connection pool:
@@ -127,6 +166,23 @@ const db = new Kysely<Database>({
   },
 })
 ```
+
+## Introspection
+
+Query database metadata at runtime:
+
+```typescript
+const tables = await db.introspection.getTables()
+
+for (const table of tables) {
+  console.log(table.name)
+  for (const column of table.columns) {
+    console.log(`  ${column.name}: ${column.dataType}`)
+  }
+}
+```
+
+Useful for codegen scripts, admin tools, and dynamic schema exploration.
 
 ## Pitfalls
 

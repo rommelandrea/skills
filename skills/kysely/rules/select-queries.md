@@ -151,6 +151,69 @@ const page = await db.selectFrom('user')
   .execute()
 ```
 
+## Distinct
+
+```typescript
+// Simple distinct
+const names = await db.selectFrom('user')
+  .select('name')
+  .distinct()
+  .execute()
+
+// Distinct on (PostgreSQL only) — one row per unique owner_id
+const owners = await db.selectFrom('user')
+  .innerJoin('pet', 'pet.owner_id', 'user.id')
+  .distinctOn('user.id')
+  .selectAll('user')
+  .execute()
+```
+
+## Expression Builder
+
+Use the expression builder callback for type-safe dynamic expressions:
+
+```typescript
+const users = await db.selectFrom('user')
+  .select(({ eb, selectFrom, val, lit, fn, or }) => [
+    'user.id',
+    // Correlated subquery
+    selectFrom('post')
+      .whereRef('post.user_id', '=', 'user.id')
+      .select('post.title')
+      .limit(1)
+      .as('first_post_title'),
+    // Boolean expression
+    or([
+      eb('name', '=', 'Alice'),
+      eb('name', '=', 'Bob'),
+    ]).as('is_target'),
+    // Static value
+    val('constant').as('static_value'),
+    // Literal (unparameterized)
+    lit(42).as('literal_number'),
+    // Aggregate function
+    fn.count<number>('id').as('total'),
+  ])
+  .execute()
+```
+
+## Function Calls with fn
+
+```typescript
+const stats = await db.selectFrom('user')
+  .innerJoin('post', 'post.user_id', 'user.id')
+  .select(({ fn, val }) => [
+    'user.id',
+    fn.count<number>('post.id').as('post_count'),
+    fn.max('post.created_at').as('latest_post'),
+    fn.agg<string[]>('array_agg', ['post.title']).as('post_titles'),
+    fn<string>('concat', [val('User: '), 'user.name']).as('label'),
+  ])
+  .groupBy('user.id')
+  .having((eb) => eb.fn.count('post.id'), '>', 5)
+  .execute()
+```
+
 ## Subqueries
 
 ```typescript
@@ -175,6 +238,19 @@ const activeAuthors = await db.selectFrom('user')
       .select('user_id')
       .where('published', '=', true)
   )
+  .execute()
+
+// Subquery join
+const result = await db.selectFrom('user')
+  .innerJoin(
+    (eb) => eb
+      .selectFrom('post')
+      .select(['user_id as owner', 'title'])
+      .where('published', '=', true)
+      .as('published_posts'),
+    (join) => join.onRef('published_posts.owner', '=', 'user.id'),
+  )
+  .selectAll('published_posts')
   .execute()
 ```
 
@@ -202,10 +278,31 @@ const result = await db
 
 ## Dynamic Queries
 
-Build queries conditionally:
+Build queries conditionally using `$if` or standard conditionals:
 
 ```typescript
+// Using $if — chainable and concise
 function findUsers(filters: {
+  name?: string
+  email?: string
+  active?: boolean
+}) {
+  return db.selectFrom('user')
+    .select(['id', 'name', 'email'])
+    .$if(filters.name != null, (qb) =>
+      qb.where('name', 'ilike', `%${filters.name}%`)
+    )
+    .$if(filters.email != null, (qb) =>
+      qb.where('email', '=', filters.email!)
+    )
+    .$if(filters.active !== undefined, (qb) =>
+      qb.where('active', '=', filters.active!)
+    )
+    .execute()
+}
+
+// Using let reassignment — better for complex branching
+function findUsersAlt(filters: {
   name?: string
   email?: string
   active?: boolean
@@ -226,9 +323,35 @@ function findUsers(filters: {
 }
 ```
 
+## CTEs with DML (PostgreSQL)
+
+CTEs can contain INSERT/UPDATE/DELETE, enabling multi-step operations in a single statement:
+
+```typescript
+const result = await db
+  .with('new_user', (db) => db
+    .insertInto('user')
+    .values({ email: 'alice@example.com', name: 'Alice' })
+    .returning('id')
+  )
+  .with('new_profile', (db) => db
+    .insertInto('profile')
+    .values({
+      user_id: db.selectFrom('new_user').select('id'),
+      bio: '',
+    })
+    .returning('id')
+  )
+  .selectFrom(['new_user', 'new_profile'])
+  .select(['new_user.id as user_id', 'new_profile.id as profile_id'])
+  .executeTakeFirstOrThrow()
+```
+
 ## Pitfalls
 
 - **`selectAll()` breaks when columns change** — narrow selects keep queries stable.
 - **Left join columns are nullable** — Kysely correctly types them as `T | null`.
 - **`executeTakeFirst()` returns `undefined` on no match** — use `executeTakeFirstOrThrow()` when you expect a result.
 - **Aggregate functions need explicit type parameters** — use `eb.fn.count<number>('id')` to avoid `string | number | bigint`.
+- **Always qualify columns in joins** — `select('id')` is ambiguous when two tables have `id`. Use `'user.id'`.
+- **`distinctOn` is PostgreSQL only** — it is not available on MySQL or SQLite.

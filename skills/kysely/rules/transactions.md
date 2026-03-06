@@ -79,6 +79,33 @@ Available isolation levels:
 - `'repeatable read'`
 - `'serializable'`
 
+## Controlled Transactions
+
+Use `start()` for manual commit/rollback control when you need to conditionally commit:
+
+```typescript
+const trx = await db.transaction().start()
+
+try {
+  const user = await trx.insertInto('user')
+    .values({ email: 'alice@example.com', name: 'Alice' })
+    .returningAll()
+    .executeTakeFirstOrThrow()
+
+  // Conditionally commit
+  if (user.email.endsWith('@example.com')) {
+    await trx.commit()
+  } else {
+    await trx.rollback()
+  }
+} catch (error) {
+  await trx.rollback()
+  throw error
+}
+```
+
+Prefer `db.transaction().execute()` for most cases — it handles commit/rollback automatically.
+
 ## Pass Transaction to Helper Functions
 
 Always pass the `trx` parameter to functions that run inside a transaction. Never use the global `db` inside a transaction callback:
@@ -121,30 +148,48 @@ await db.transaction().execute(async (trx) => {
 
 ## Nested Transactions with Savepoints
 
-Kysely does not natively support savepoints. Use raw SQL if you need nested rollback points:
+Kysely automatically uses savepoints when you nest `transaction().execute()` inside an existing transaction. A failure in the inner block rolls back to the savepoint, not the entire transaction:
+
+```typescript
+await db.transaction().execute(async (trx) => {
+  const user = await trx.insertInto('user')
+    .values({ email: 'alice@example.com', name: 'Alice' })
+    .returningAll()
+    .executeTakeFirstOrThrow()
+
+  try {
+    // Inner transaction — uses a savepoint under the hood
+    await trx.transaction().execute(async (innerTrx) => {
+      await innerTrx.insertInto('risky_table')
+        .values({ data: 'maybe fails' })
+        .execute()
+    })
+  } catch {
+    // Savepoint rolled back; outer transaction continues
+  }
+
+  // This still commits even if the inner block failed
+  await trx.insertInto('audit_log')
+    .values({ action: 'user_created', user_id: user.id })
+    .execute()
+})
+```
+
+For explicit control, you can also use raw SQL savepoints:
 
 ```typescript
 import { sql } from 'kysely'
 
 await db.transaction().execute(async (trx) => {
-  await trx.insertInto('audit_log')
-    .values({ action: 'start' })
-    .execute()
+  await sql`SAVEPOINT sp1`.execute(trx)
 
   try {
-    await sql`SAVEPOINT sp1`.execute(trx)
-
     await trx.insertInto('risky_table')
       .values({ data: 'maybe fails' })
       .execute()
   } catch {
     await sql`ROLLBACK TO SAVEPOINT sp1`.execute(trx)
-    // Continue with the rest of the transaction
   }
-
-  await trx.insertInto('audit_log')
-    .values({ action: 'end' })
-    .execute()
 })
 ```
 
